@@ -63,13 +63,37 @@ def get_db():
 def init_db():
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute('\n            CREATE TABLE IF NOT EXISTS users (\n                id INTEGER PRIMARY KEY AUTOINCREMENT,\n                username TEXT UNIQUE NOT NULL,\n                password_hash TEXT NOT NULL,\n                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n            )\n        ')
-        cursor.execute('\n            CREATE TABLE IF NOT EXISTS presets (\n                id INTEGER PRIMARY KEY AUTOINCREMENT,\n                user_id INTEGER NOT NULL,\n                name TEXT NOT NULL,\n                config TEXT NOT NULL,\n                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE\n            )\n        ')
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS presets (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                name TEXT NOT NULL,
+                config TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        ''')
         conn.commit()
+        
+        # --- TỰ ĐỘNG TẠO TÀI KHOẢN CỐ ĐỊNH KHI RESET ---
+        cursor.execute('SELECT * FROM users WHERE username = ?', ('admin',))
+        if not cursor.fetchone():
+            default_pass = generate_password_hash('123456')  # Mật khẩu mặc định
+            cursor.execute('INSERT INTO users (username, password_hash) VALUES (?, ?)', ('admin', default_pass))
+            conn.commit()
+            print('[Hệ thống] Đã tự động tạo tài khoản mặc định: admin / 123456')
+
 init_db()
 
 def login_required(f):
-
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
@@ -82,7 +106,6 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 class DiscordRPCWorker:
-
     def __init__(self):
         self.client = None
         self.loop = None
@@ -724,12 +747,9 @@ if __name__ == '__main__':
     print('      DISCORD RICH PRESENCE MASTER (Flask + Selfbot)     ')
     print('=========================================================')
     
-    # Lấy cổng PORT do Render cấp tự động, mặc định là 5000 nếu chạy ở máy tính (local)
     port = int(os.environ.get('PORT', 5000))
-    
     print(f' Đang khởi chạy web server tại cổng {port} ... ')
     
-    # BẮT BUỘC phải dùng host='0.0.0.0' để Render nhận diện được web
     try:
         app.run(host='0.0.0.0', port=port, debug=False)
     except (KeyboardInterrupt, SystemExit):
