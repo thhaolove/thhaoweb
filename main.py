@@ -74,10 +74,6 @@ KNOWN_ASSET_ICONS = {
 LOG_BUFFER = []
 MAX_LOG_ENTRIES = 120
 
-QUEST_LOG_BUFFER = []
-QUEST_LOG_LOCK = threading.Lock()
-MAX_QUEST_LOG_ENTRIES = 200
-
 def log_event(message: str, level: str='info'):
     timestamp = time.strftime('%H:%M:%S')
     entry = {'time': timestamp, 'message': str(message), 'level': level}
@@ -85,15 +81,6 @@ def log_event(message: str, level: str='info'):
     if len(LOG_BUFFER) > MAX_LOG_ENTRIES:
         LOG_BUFFER.pop(0)
     print(f'[{timestamp}] [{level.upper()}] {message}')
-
-def quest_log(message: str, level: str = 'info'):
-    timestamp = time.strftime('%H:%M:%S')
-    entry = {'time': timestamp, 'message': str(message), 'level': level}
-    with QUEST_LOG_LOCK:
-        QUEST_LOG_BUFFER.append(entry)
-        if len(QUEST_LOG_BUFFER) > MAX_QUEST_LOG_ENTRIES:
-            QUEST_LOG_BUFFER.pop(0)
-    print(f'[QUEST][{timestamp}] [{level.upper()}] {message}')
 
 log_event('Hệ thống Discord RPC Master v2.2 đã sẵn sàng hoạt động.', 'info')
 
@@ -114,6 +101,7 @@ def init_db():
                 discord_id TEXT DEFAULT '',
                 discord_username TEXT DEFAULT '',
                 discord_avatar TEXT DEFAULT '',
+                config TEXT DEFAULT '',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
@@ -136,7 +124,6 @@ def init_db():
                 except Exception:
                     pass
         
-        # Tạo tài khoản mặc định admin / 123456 nếu chưa có
         cursor.execute('SELECT * FROM users WHERE username = ?', ('admin',))
         if not cursor.fetchone():
             default_pass = generate_password_hash('123456')
@@ -146,84 +133,6 @@ def init_db():
         conn.commit()
 
 init_db()
-
-def generate_slide_captcha():
-    width, height = 320, 160
-    piece_w, piece_h = 44, 44
-    bg_img = None
-    try:
-        urls = [
-            'https://picsum.photos/320/160?random=' + str(random.randint(1, 9999)),
-            'https://picsum.photos/320/160'
-        ]
-        url = random.choice(urls)
-        res = requests.get(url, timeout=2.5)
-        if res.status_code == 200:
-            bg_img = Image.open(io.BytesIO(res.content)).convert('RGBA')
-            if bg_img.size != (width, height):
-                bg_img = bg_img.resize((width, height), Image.Resampling.LANCZOS)
-    except Exception:
-        bg_img = None
-
-    if bg_img is None:
-        bg_img = Image.new('RGBA', (width, height), (15, 23, 42, 255))
-        draw = ImageDraw.Draw(bg_img)
-        for y in range(height):
-            r = int(15 + (45 - 15) * (y / height))
-            g = int(23 + (15 - 23) * (y / height))
-            b = int(42 + (90 - 42) * (y / height))
-            draw.line([(0, y), (width, y)], fill=(r, g, b, 255))
-        for i in range(0, width, 24):
-            draw.line([(i, 0), (i, height)], fill=(99, 102, 241, 40), width=1)
-        for j in range(0, height, 20):
-            draw.line([(0, j), (width, j)], fill=(6, 182, 212, 40), width=1)
-        for _ in range(8):
-            cx = random.randint(20, width - 20)
-            cy = random.randint(20, height - 20)
-            rad = random.randint(15, 45)
-            draw.ellipse([cx - rad, cy - rad, cx + rad, cy + rad], outline=(129, 140, 248, 80), width=2)
-            draw.text((cx - 10, cy - 8), "#RPC", fill=(56, 189, 248, 120))
-
-    target_x = random.randint(80, width - piece_w - 20)
-    target_y = random.randint(15, height - piece_h - 15)
-
-    session['slide_target_x'] = target_x
-    session['slide_target_y'] = target_y
-    session['slide_verified'] = False
-
-    mask = Image.new('L', (piece_w, piece_h), 0)
-    m_draw = ImageDraw.Draw(mask)
-    m_draw.rounded_rectangle([0, 0, piece_w - 1, piece_h - 1], radius=7, fill=255)
-
-    crop = bg_img.crop((target_x, target_y, target_x + piece_w, target_y + piece_h))
-    piece_img = Image.new('RGBA', (piece_w, piece_h), (0, 0, 0, 0))
-    piece_img.paste(crop, (0, 0), mask)
-
-    p_draw = ImageDraw.Draw(piece_img)
-    p_draw.rounded_rectangle([0, 0, piece_w - 1, piece_h - 1], radius=7, outline=(99, 102, 241, 255), width=2)
-
-    hole = Image.new('RGBA', (piece_w, piece_h), (0, 0, 0, 215))
-    bg_img.paste(hole, (target_x, target_y), mask)
-    bg_draw = ImageDraw.Draw(bg_img)
-    bg_draw.rounded_rectangle([target_x, target_y, target_x + piece_w - 1, target_y + piece_h - 1], radius=7, outline=(255, 255, 255, 180), width=2)
-
-    bg_buffer = io.BytesIO()
-    bg_img.convert('RGB').save(bg_buffer, format='JPEG', quality=88)
-    bg_base64 = base64.b64encode(bg_buffer.getvalue()).decode('utf-8')
-
-    piece_buffer = io.BytesIO()
-    piece_img.save(piece_buffer, format='PNG')
-    piece_base64 = base64.b64encode(piece_buffer.getvalue()).decode('utf-8')
-
-    return {
-        'bg_image': f"data:image/jpeg;base64,{bg_base64}",
-        'piece_image': f"data:image/png;base64,{piece_base64}",
-        'target_y': target_y,
-        'piece_width': piece_w,
-        'piece_height': piece_h,
-        'bg_width': width,
-        'bg_height': height
-    }
 
 def login_required(f):
     @wraps(f)
@@ -253,8 +162,6 @@ class DiscordRPCWorker:
         self.current_config = None
         self._managed_app = None
         self._last_name_edit_time = 0
-        self._last_icon_edit_time = 0
-        self._asset_cache = {}
         self._name_edit_cooldown = 30
         self._lock = threading.Lock()
 
@@ -369,45 +276,35 @@ class DiscordRPCWorker:
                 clean_pref = str(preferred_app_id).strip()
                 for app in my_apps:
                     if str(app.id) == clean_pref:
-                        log_event(f'Sử dụng chính xác ứng dụng theo App ID: {app.name} ({app.id})', 'info')
                         self._managed_app = app
                         return app
             if desired_name:
                 for app in my_apps:
                     if app.name.lower() == desired_name.lower():
-                        log_event(f"Tìm thấy ứng dụng trùng tên '{desired_name}': {app.name} ({app.id})", 'info')
                         self._managed_app = app
                         return app
             for app in my_apps:
                 desc = getattr(app, 'description', '') or ''
                 if tag_prefix in desc or app.name == 'DiscordRPC Master':
-                    log_event(f'Tìm thấy ứng dụng đã quản lý: {app.name} ({app.id})', 'info')
                     self._managed_app = app
                     return app
             if my_apps:
                 app = my_apps[0]
-                log_event(f'Tự động sử dụng ứng dụng có sẵn trên tài khoản: {app.name} ({app.id})', 'info')
                 self._managed_app = app
                 return app
-        except Exception as e:
-            log_event(f'Lỗi khi duyệt danh sách ứng dụng: {e}', 'warning')
+        except Exception:
+            pass
         
         app_name = desired_name if desired_name else 'DiscordRPC Master'
         try:
-            log_event(f"Đang tự động tạo Application mới '{app_name}' trên Discord Developer Portal...", 'info')
             new_app = await self.client.create_application(app_name)
             try:
-                await new_app.edit(description='[RPC Master] Tự động quản lý Rich Presence bởi Discord RPC Master')
+                await new_app.edit(description='[RPC Master] Tự động quản lý Rich Presence')
             except Exception:
                 pass
             self._managed_app = new_app
-            log_event(f'Tạo thành công Application: {new_app.name} ({new_app.id})', 'success')
             return new_app
-        except Exception as e:
-            if 'captcha' in str(e).lower():
-                log_event('Discord yêu cầu xác thực Captcha khi tạo ứng dụng qua script. Vui lòng mở Developer Portal tạo 1 app bất kỳ.', 'warning')
-            else:
-                log_event(f'Không thể tự tạo Application: {e}', 'warning')
+        except Exception:
             return None
 
     async def _sync_app_name(self, app, desired_name: str):
@@ -416,18 +313,13 @@ class DiscordRPCWorker:
         if getattr(app, 'name', None) == desired_name:
             return
         now = time.time()
-        elapsed = now - self._last_name_edit_time
-        if elapsed < self._name_edit_cooldown:
-            remain = int(self._name_edit_cooldown - elapsed)
-            log_event(f"Tránh Rate Limit: Chờ {remain}s trước khi đổi tên trên Developer Portal.", 'info')
+        if now - self._last_name_edit_time < self._name_edit_cooldown:
             return
         try:
-            log_event(f"Đang đổi tên Application từ '{app.name}' sang '{desired_name}'...", 'info')
             await app.edit(name=desired_name)
             self._last_name_edit_time = now
-            log_event(f"Đã đổi tên Application thành '{desired_name}' thành công.", 'success')
-        except Exception as e:
-            log_event(f'Cảnh báo khi đổi tên Application: {e}', 'warning')
+        except Exception:
+            pass
 
     async def _resolve_or_upload_asset(self, app, img_val: str, prefix: str) -> Optional[str]:
         if not img_val:
@@ -447,11 +339,9 @@ class DiscordRPCWorker:
                     if not bot and hasattr(app, 'fetch_bot'):
                         bot = await app.fetch_bot()
                     if bot and bot.avatar:
-                        avatar_url = str(bot.avatar.url)
-                        return avatar_url
+                        return str(bot.avatar.url)
                     if getattr(app, 'icon', None):
-                        icon_url = str(app.icon.url)
-                        return icon_url
+                        return str(app.icon.url)
                 except Exception:
                     pass
             if not img_val:
@@ -607,7 +497,7 @@ class DiscordRPCWorker:
                         return
                     self.user_tag = str(client.user)
                     self.user_id = str(client.user.id)
-                log_event(f'Đã đăng nhập tài khoản Discord: {self.user_tag} ({self.user_id})', 'success')
+                log_event(f'Đã đăng nhập tài khoản Discord: {self.user_tag}', 'success')
                 activity = await self._build_activity(config)
                 status_choice = config.get('userStatus', 'online')
                 discord_status = getattr(discord.Status, status_choice, discord.Status.online)
@@ -615,32 +505,21 @@ class DiscordRPCWorker:
                 with self._lock:
                     if self._run_id == run_id:
                         self.status = 'running'
-                log_event(f'Đã phát trạng thái Rich Presence ({discord_status.value}) thành công!', 'success')
+                log_event('Đã phát trạng thái Rich Presence thành công!', 'success')
             except Exception as e:
                 with self._lock:
                     if self._run_id == run_id:
                         self.status = 'error'
-                        self.error_message = f'Lỗi khi phát trạng thái: {e}'
-                log_event(f'Lỗi nghiêm trọng khi phát trạng thái: {e}', 'error')
+                        self.error_message = str(e)
+                log_event(f'Lỗi khi phát trạng thái: {e}', 'error')
 
         try:
-            log_event('Đang kết nối tới Discord Gateway qua User Token...', 'info')
             loop.run_until_complete(client.start(token))
-        except discord.errors.LoginFailure:
-            with self._lock:
-                if self._run_id == run_id:
-                    self.status = 'error'
-                    self.error_message = 'Discord User Token không hợp lệ hoặc đã bị khóa!'
-            log_event('Lỗi LoginFailure: Discord User Token không hợp lệ!', 'error')
-        except (asyncio.CancelledError, KeyboardInterrupt):
-            pass
         except Exception as e:
             with self._lock:
                 if self._run_id == run_id and self.status not in ('stopped', 'stopping'):
                     self.status = 'error'
                     self.error_message = str(e)
-            if self._run_id == run_id and self.status not in ('stopped', 'stopping'):
-                log_event(f'Ngoại lệ kết nối Gateway: {e}', 'error')
         finally:
             try:
                 if not client.is_closed():
@@ -706,6 +585,33 @@ def login():
             return redirect(url_for('login'))
     return render_template('login.html')
 
+@app.route('/register', methods=['POST'])
+def register():
+    username = request.form.get('username', '').strip()
+    password = request.form.get('password', '').strip()
+    confirm_password = request.form.get('confirm_password', '').strip()
+    
+    if not username or not password:
+        flash('Vui lòng điền đầy đủ các thông tin đăng ký.', 'error')
+        return redirect(url_for('login'))
+    if len(username) < 3:
+        flash('Tên đăng nhập phải có tối thiểu 3 ký tự.', 'error')
+        return redirect(url_for('login'))
+    if password != confirm_password:
+        flash('Mật khẩu xác nhận không khớp.', 'error')
+        return redirect(url_for('login'))
+        
+    password_hash = generate_password_hash(password)
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute('INSERT INTO users (username, password_hash) VALUES (?, ?)', (username, password_hash))
+            conn.commit()
+        flash('Tạo tài khoản thành công! Hãy đăng nhập ngay bây giờ.', 'success')
+    except sqlite3.IntegrityError:
+        flash('Tên đăng nhập này đã được sử dụng. Vui lòng chọn tên khác.', 'error')
+    return redirect(url_for('login'))
+
 @app.route('/logout')
 def logout():
     session.clear()
@@ -735,7 +641,7 @@ def api_start():
         if not token and 'discord_token' in session:
             token = session['discord_token']
     if not token:
-        return jsonify({'success': False, 'message': 'Chưa có token. Vui lòng liên kết Discord Token tại mục Quản Lý Tài Khoản trước!'}), 400
+        return jsonify({'success': False, 'message': 'Chưa có token. Vui lòng liên kết Discord Token trước!'}), 400
     data['token'] = token
     rpc_worker.start(data)
     return jsonify({'success': True, 'message': 'Đã gửi lệnh kết nối tới Discord Gateway'})
