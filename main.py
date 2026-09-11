@@ -8,6 +8,7 @@ import asyncio
 import threading
 import webbrowser
 import hashlib
+<<<<<<< HEAD
 import random
 import re
 import base64
@@ -15,12 +16,20 @@ import io
 from functools import wraps
 from typing import Optional, List, Dict, Union, Any
 from PIL import Image, ImageDraw, ImageFilter
+=======
+from functools import wraps
+from typing import Optional, List, Dict, Union, Any
+>>>>>>> 192aa0cb983095b9b5b7a57ffb75dd004d30ccaf
 if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 if hasattr(sys.stderr, 'reconfigure'):
     sys.stderr.reconfigure(encoding='utf-8', errors='replace')
 import requests
+<<<<<<< HEAD
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, send_from_directory, Response
+=======
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, send_from_directory
+>>>>>>> 192aa0cb983095b9b5b7a57ffb75dd004d30ccaf
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 import discord
@@ -41,12 +50,17 @@ UPLOAD_FOLDER = os.path.join(BASE_DIR, 'static', 'uploads')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app = Flask(__name__)
+<<<<<<< HEAD
 app.secret_key = os.environ.get('SECRET_KEY', 'discord_rpc_master_secret_key_fixed')
+=======
+app.secret_key = os.urandom(32)
+>>>>>>> 192aa0cb983095b9b5b7a57ffb75dd004d30ccaf
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 UPLOAD_PATH_MAP = {}
+<<<<<<< HEAD
 KNOWN_ASSET_ICONS = {
     'vscode': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/vscode/vscode-original.svg',
     'python': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg',
@@ -72,6 +86,12 @@ QUEST_LOG_BUFFER = []
 QUEST_LOG_LOCK = threading.Lock()
 MAX_QUEST_LOG_ENTRIES = 200
 
+=======
+KNOWN_ASSET_ICONS = {'vscode': 'https://cdn.discordapp.com/app-assets/383226320970055681/1359299466493956258.png', 'python': 'https://cdn.discordapp.com/app-assets/383226320970055681/1359299282380918886.png', 'git': 'https://cdn.discordapp.com/app-assets/383226320970055681/1359298453284323538.png', 'docker': 'https://cdn.discordapp.com/app-assets/383226320970055681/1359298813092823040.png', 'js': 'https://cdn.discordapp.com/app-assets/383226320970055681/1359299016025964687.png', 'ts': 'https://cdn.discordapp.com/app-assets/383226320970055681/1359299427059236984.png', 'jsx': 'https://cdn.discordapp.com/app-assets/383226320970055681/1359299015983894651.png', 'tsx': 'https://cdn.discordapp.com/app-assets/383226320970055681/1359299426262319284.png', 'html': 'https://cdn.discordapp.com/app-assets/383226320970055681/1359298813092823041.png', 'css': 'https://cdn.discordapp.com/app-assets/383226320970055681/1359298812694364230.png', 'c': 'https://cdn.discordapp.com/app-assets/383226320970055681/1359298812165881958.png', 'cpp': 'https://cdn.discordapp.com/app-assets/383226320970055681/1359298812425932820.png', 'csharp': 'https://cdn.discordapp.com/app-assets/383226320970055681/1359298812555952138.png', 'java': 'https://cdn.discordapp.com/app-assets/383226320970055681/1359299015862255717.png', 'rust': 'https://cdn.discordapp.com/app-assets/383226320970055681/1359299282934567013.png', 'go': 'https://cdn.discordapp.com/app-assets/383226320970055681/1359298813357064273.png'}
+LOG_BUFFER = []
+MAX_LOG_ENTRIES = 120
+
+>>>>>>> 192aa0cb983095b9b5b7a57ffb75dd004d30ccaf
 def log_event(message: str, level: str='info'):
     timestamp = time.strftime('%H:%M:%S')
     entry = {'time': timestamp, 'message': str(message), 'level': level}
@@ -79,6 +99,7 @@ def log_event(message: str, level: str='info'):
     if len(LOG_BUFFER) > MAX_LOG_ENTRIES:
         LOG_BUFFER.pop(0)
     print(f'[{timestamp}] [{level.upper()}] {message}')
+<<<<<<< HEAD
 
 def quest_log(message: str, level: str = 'info'):
     """Push log entry into QUEST_LOG_BUFFER for realtime terminal display"""
@@ -90,6 +111,8 @@ def quest_log(message: str, level: str = 'info'):
             QUEST_LOG_BUFFER.pop(0)
     print(f'[QUEST][{timestamp}] [{level.upper()}] {message}')
 
+=======
+>>>>>>> 192aa0cb983095b9b5b7a57ffb75dd004d30ccaf
 log_event('Hệ thống Discord RPC Master v2.2 đã sẵn sàng hoạt động.', 'info')
 
 def get_db():
@@ -105,10 +128,13 @@ def init_db():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT UNIQUE NOT NULL,
                 password_hash TEXT NOT NULL,
+<<<<<<< HEAD
                 discord_token TEXT DEFAULT '',
                 discord_id TEXT DEFAULT '',
                 discord_username TEXT DEFAULT '',
                 discord_avatar TEXT DEFAULT '',
+=======
+>>>>>>> 192aa0cb983095b9b5b7a57ffb75dd004d30ccaf
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
@@ -122,6 +148,7 @@ def init_db():
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
             )
         ''')
+<<<<<<< HEAD
         cursor.execute("PRAGMA table_info(users)")
         cols = [r['name'] for r in cursor.fetchall()]
         for col_name in ['discord_token', 'discord_id', 'discord_username', 'discord_avatar', 'config']:
@@ -227,6 +254,21 @@ def generate_slide_captcha():
 
 def login_required(f):
 
+=======
+        conn.commit()
+        
+        # --- TỰ ĐỘNG TẠO TÀI KHOẢN CỐ ĐỊNH KHI RESET ---
+        cursor.execute('SELECT * FROM users WHERE username = ?', ('admin',))
+        if not cursor.fetchone():
+            default_pass = generate_password_hash('123456')  # Mật khẩu mặc định
+            cursor.execute('INSERT INTO users (username, password_hash) VALUES (?, ?)', ('admin', default_pass))
+            conn.commit()
+            print('[Hệ thống] Đã tự động tạo tài khoản mặc định: admin / 123456')
+
+init_db()
+
+def login_required(f):
+>>>>>>> 192aa0cb983095b9b5b7a57ffb75dd004d30ccaf
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
@@ -239,7 +281,10 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 class DiscordRPCWorker:
+<<<<<<< HEAD
 
+=======
+>>>>>>> 192aa0cb983095b9b5b7a57ffb75dd004d30ccaf
     def __init__(self):
         self.client = None
         self.loop = None
@@ -435,6 +480,7 @@ class DiscordRPCWorker:
             img_val = ''
         img_val = img_val.strip()
         lower_val = img_val.lower()
+<<<<<<< HEAD
 
         # NẾU LÀ ẢNH NHỎ VÀ NGƯỜI DÙNG KHÔNG NHẬP HOẶC ĐÃ GỠ -> TRẢ VỀ NONE HẲN (KHÔNG HIỆN ẢNH NHỎ TRÊN DISCORD)
         if prefix == 's' and not img_val:
@@ -443,6 +489,9 @@ class DiscordRPCWorker:
         if lower_val in ('', 'bot', 'app', 'bot_avatar', 'app_icon', 'developer_portal', 'portal', 'default'):
             if prefix == 's':
                 return None
+=======
+        if lower_val in ('', 'bot', 'app', 'bot_avatar', 'app_icon', 'developer_portal', 'portal', 'default'):
+>>>>>>> 192aa0cb983095b9b5b7a57ffb75dd004d30ccaf
             if app:
                 try:
                     bot = getattr(app, 'bot', None)
@@ -492,7 +541,11 @@ class DiscordRPCWorker:
                     return icon_url
             except Exception as icon_err:
                 print(f'[RPC Worker] Lưu ý cập nhật App Icon: {icon_err}')
+<<<<<<< HEAD
         if app and prefix == 'l':
+=======
+        if app:
+>>>>>>> 192aa0cb983095b9b5b7a57ffb75dd004d30ccaf
             try:
                 bot = getattr(app, 'bot', None)
                 if not bot and hasattr(app, 'fetch_bot'):
@@ -505,7 +558,13 @@ class DiscordRPCWorker:
                 pass
         if prefix == 'l':
             return KNOWN_ASSET_ICONS.get('vscode')
+<<<<<<< HEAD
         return None
+=======
+        elif prefix == 's':
+            return KNOWN_ASSET_ICONS.get('python')
+        return img_val
+>>>>>>> 192aa0cb983095b9b5b7a57ffb75dd004d30ccaf
 
     async def _build_activity(self, config):
         activity_type_str = config.get('activityType', 'playing')
@@ -666,6 +725,7 @@ class DiscordRPCWorker:
                         self.loop = None
 rpc_worker = DiscordRPCWorker()
 
+<<<<<<< HEAD
 def normalize_rpc_config(data: dict) -> dict:
     if not isinstance(data, dict):
         return {}
@@ -1465,16 +1525,25 @@ def index():
     d_name = (u['discord_username'] if u and u['discord_username'] else None)
     d_avatar = (u['discord_avatar'] if u and u['discord_avatar'] else None)
     return render_template('index.html', username=session.get('username'), has_token=has_token, discord_username=d_name, discord_avatar=d_avatar)
+=======
+@app.route('/')
+@login_required
+def index():
+    return render_template('index.html', username=session.get('username'))
+>>>>>>> 192aa0cb983095b9b5b7a57ffb75dd004d30ccaf
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
+<<<<<<< HEAD
         if not session.get('slide_verified', False):
             flash('Vui lòng kéo thanh trượt ghép đúng hình ảnh để xác thực.', 'error')
             return redirect(url_for('login'))
         # Đã dùng xong captcha -> reset lại để bảo mật tuyệt đối
         session['slide_verified'] = False
 
+=======
+>>>>>>> 192aa0cb983095b9b5b7a57ffb75dd004d30ccaf
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '').strip()
         if not username or not password:
@@ -1487,10 +1556,13 @@ def login():
         if user and check_password_hash(user['password_hash'], password):
             session['user_id'] = user['id']
             session['username'] = user['username']
+<<<<<<< HEAD
             if user['discord_token']:
                 session['discord_token'] = user['discord_token']
                 session['discord_username'] = user['discord_username']
                 session['discord_avatar'] = user['discord_avatar']
+=======
+>>>>>>> 192aa0cb983095b9b5b7a57ffb75dd004d30ccaf
             flash(f'Chào mừng trở lại, {username}!', 'success')
             return redirect(url_for('index'))
         else:
@@ -1500,11 +1572,14 @@ def login():
 
 @app.route('/register', methods=['POST'])
 def register():
+<<<<<<< HEAD
     if not session.get('slide_verified', False):
         flash('Vui lòng kéo thanh trượt ghép đúng hình ảnh để xác thực.', 'error')
         return redirect(url_for('login'))
     session['slide_verified'] = False
 
+=======
+>>>>>>> 192aa0cb983095b9b5b7a57ffb75dd004d30ccaf
     username = request.form.get('username', '').strip()
     password = request.form.get('password', '').strip()
     confirm_password = request.form.get('confirm_password', '').strip()
@@ -1534,6 +1609,7 @@ def logout():
     flash('Đã đăng xuất thành công.', 'info')
     return redirect(url_for('login'))
 
+<<<<<<< HEAD
 @app.route('/api/account/info', methods=['GET'])
 @login_required
 def api_account_info():
@@ -1800,6 +1876,8 @@ def api_lyrics_clear():
     ok, msg = lyric_worker.clear_lyric(token)
     return jsonify({'success': ok, 'message': msg})
 
+=======
+>>>>>>> 192aa0cb983095b9b5b7a57ffb75dd004d30ccaf
 @app.route('/api/status', methods=['GET'])
 @login_required
 def api_status():
@@ -1808,6 +1886,7 @@ def api_status():
 @app.route('/api/start', methods=['POST'])
 @login_required
 def api_start():
+<<<<<<< HEAD
     raw_data = request.get_json() or {}
     data = normalize_rpc_config(raw_data)
     token = data.get('token', '').strip()
@@ -1830,11 +1909,22 @@ def api_start():
         data['activityName'] = 'Visual Studio Code'
     rpc_worker.start(data)
     log_event(f'Khởi động Discord RPC: {data["activityName"]}', 'success')
+=======
+    data = request.get_json() or {}
+    token = data.get('token', '').strip()
+    activity_name = data.get('activityName', '').strip()
+    if not token:
+        return (jsonify({'success': False, 'message': 'Thiếu Discord User Token'}), 400)
+    if not activity_name:
+        return (jsonify({'success': False, 'message': 'Thiếu tên hoạt động / ứng dụng'}), 400)
+    rpc_worker.start(data)
+>>>>>>> 192aa0cb983095b9b5b7a57ffb75dd004d30ccaf
     return jsonify({'success': True, 'message': 'Đã gửi lệnh kết nối tới Discord Gateway'})
 
 @app.route('/api/update', methods=['POST'])
 @login_required
 def api_update():
+<<<<<<< HEAD
     raw_data = request.get_json() or {}
     data = normalize_rpc_config(raw_data)
     token = data.get('token', '').strip()
@@ -1857,10 +1947,19 @@ def api_update():
     try:
         rpc_worker.update_presence(data)
         log_event(f'Cập nhật Discord RPC: {data["activityName"]}', 'info')
+=======
+    data = request.get_json() or {}
+    activity_name = data.get('activityName', '').strip()
+    if not activity_name:
+        return (jsonify({'success': False, 'message': 'Thiếu tên hoạt động / ứng dụng'}), 400)
+    try:
+        rpc_worker.update_presence(data)
+>>>>>>> 192aa0cb983095b9b5b7a57ffb75dd004d30ccaf
         return jsonify({'success': True, 'message': 'Đã cập nhật trạng thái Discord thành công!'})
     except Exception as e:
         return (jsonify({'success': False, 'message': f'Lỗi khi cập nhật: {str(e)}'}), 500)
 
+<<<<<<< HEAD
 @app.route('/api/save_config', methods=['POST'])
 @login_required
 def api_save_config():
@@ -1890,16 +1989,21 @@ def api_get_config():
             pass
     return jsonify({'success': True, 'config': None})
 
+=======
+>>>>>>> 192aa0cb983095b9b5b7a57ffb75dd004d30ccaf
 @app.route('/api/stop', methods=['POST'])
 @login_required
 def api_stop():
     rpc_worker.stop()
     return jsonify({'success': True, 'message': 'Đã dừng Discord RPC'})
 
+<<<<<<< HEAD
 @app.route('/bot_avatar')
 def serve_bot_avatar():
     return redirect('https://cdn.jsdelivr.net/gh/devicons/devicon/icons/vscode/vscode-original.svg')
 
+=======
+>>>>>>> 192aa0cb983095b9b5b7a57ffb75dd004d30ccaf
 @app.route('/api/portal_app_info', methods=['GET', 'POST'])
 @login_required
 def api_portal_app_info():
@@ -1909,6 +2013,7 @@ def api_portal_app_info():
         token = data.get('token', '').strip()
     if not token:
         token = request.args.get('token', '').strip()
+<<<<<<< HEAD
     if not token:
         user_id = session.get('user_id')
         if user_id:
@@ -1924,6 +2029,14 @@ def api_portal_app_info():
         token = rpc_worker.current_config.get('token', '').strip()
     if not token:
         return (jsonify({'success': True, 'apps': [], 'message': 'Chưa liên kết Discord Token tại mục Tài Khoản'}), 200)
+=======
+    if not token and rpc_worker and rpc_worker.config:
+        token = rpc_worker.config.get('token', '').strip()
+    if not token and 'discord_token' in session:
+        token = session['discord_token']
+    if not token:
+        return (jsonify({'success': True, 'apps': [], 'message': 'Chưa nhập Discord User Token'}), 200)
+>>>>>>> 192aa0cb983095b9b5b7a57ffb75dd004d30ccaf
     try:
         session['discord_token'] = token
         headers = {'Authorization': token, 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
@@ -2030,6 +2143,7 @@ def open_browser(port):
         pass
 
 if __name__ == '__main__':
+<<<<<<< HEAD
     port = int(os.environ.get('PORT', os.environ.get('SERVER_PORT', 5000)))
     host = '0.0.0.0'
     print('=========================================================')
@@ -2047,3 +2161,18 @@ if __name__ == '__main__':
         print('\n[Hệ thống] Đang tắt máy chủ và dọn dẹp tiến trình...')
         rpc_worker.stop()
         sys.exit(0)
+=======
+    print('=========================================================')
+    print('      DISCORD RICH PRESENCE MASTER (Flask + Selfbot)     ')
+    print('=========================================================')
+    
+    port = int(os.environ.get('PORT', 5000))
+    print(f' Đang khởi chạy web server tại cổng {port} ... ')
+    
+    try:
+        app.run(host='0.0.0.0', port=port, debug=False)
+    except (KeyboardInterrupt, SystemExit):
+        print('\n[Hệ thống] Đang tắt máy chủ và dọn dẹp tiến trình...')
+        rpc_worker.stop()
+        sys.exit(0)
+>>>>>>> 192aa0cb983095b9b5b7a57ffb75dd004d30ccaf
